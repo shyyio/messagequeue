@@ -53,7 +53,7 @@ class RedisMQ:
         self._rdb: Redis = rdb
         self._topic = topic
         self._key_cache = None
-        self._pending_list = f"topic{sep}{topic}"
+        self._pending_list = f"{topic}{sep}pending"
         self._max_pending_time = max_pending_time
         self._logger = logger
         self._wait = wait
