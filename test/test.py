@@ -46,16 +46,3 @@ class TestRedisMQ(TestCase):
 
         with self.assertRaises(ValueError):
             mq.publish({"a": 1}, item_project="test", item_type="msg")
-
-
-class TestRoutingKey(TestCase):
-
-    def test1(self):
-        key = "arc.chan.4chan.post.b"
-        parts = parse_routing_key(key)
-        self.assertEqual(parts, RoutingKeyParts("arc", "chan", "4chan", "post", "b"))
-
-    def test2(self):
-        key = "arc.reddit.submission.birdpics"
-        parts = parse_routing_key(key)
-        self.assertEqual(parts, RoutingKeyParts("arc", "reddit", None, "submission", "birdpics"))

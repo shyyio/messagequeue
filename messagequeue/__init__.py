@@ -16,36 +16,6 @@ def get_redis():
     )
 
 
-RoutingKeyParts = namedtuple(
-    "RoutingKeyParts",
-    ["arc_list", "project", "subproject", "type", "category"]
-)
-
-
-def parse_routing_key(key):
-    tokens = key.split(".")
-
-    if len(tokens) == 4:
-        arc_list, project, type_, category = tokens
-        return RoutingKeyParts(
-            arc_list=arc_list,
-            project=project,
-            subproject=None,
-            type=type_,
-            category=category
-        )
-    else:
-        arc_list, project, subproject, type_, category = tokens
-        return RoutingKeyParts(
-            arc_list=arc_list,
-            project=project,
-            subproject=subproject,
-            type=type_,
-            category=category
-        )
-
-
-
 class RedisMQ:
     _MAX_KEYS = 30
 
@@ -132,6 +102,9 @@ class RedisMQ:
             yield topic, task_json, partial(self._ack, task_json["_id"])
 
     def publish(self, item):
+
+        if "_id" not in item or type(item["_id"]) not in (str, int):
+            raise ValueError("Invalid or missing _id field")
 
         item = json.dumps(item, separators=(',', ':'), ensure_ascii=False, sort_keys=True)
 
