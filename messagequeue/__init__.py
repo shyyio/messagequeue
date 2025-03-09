@@ -22,22 +22,10 @@ class RedisMQ:
     def __init__(self, rdb, topic, sep=".", max_pending_time=120, logger=None, wait=1):
         self._rdb: Redis = rdb
         self._topic = topic
-        self._key_cache = None
         self._pending_list = f"{topic}{sep}pending"
         self._max_pending_time = max_pending_time
         self._logger = logger
         self._wait = wait
-
-    def _get_keys(self):
-        if self._key_cache:
-            return self._key_cache
-
-        keys = list(islice(
-            self._rdb.scan_iter(match=self._topic, count=RedisMQ._MAX_KEYS), RedisMQ._MAX_KEYS
-        ))
-        self._key_cache = keys
-
-        return keys
 
     def _get_pending_tasks(self):
         for task_id, pending_task in self._rdb.hscan_iter(self._pending_list):
@@ -49,6 +37,12 @@ class RedisMQ:
 
     def _ack(self, task_id):
         self._rdb.hdel(self._pending_list, task_id)
+
+    def queued_count(self):
+        return self._rdb.llen(self._topic)
+
+    def pending_count(self):
+        return self._rdb.hlen(self._pending_list)
 
     def read_messages(self):
         """
@@ -70,15 +64,9 @@ class RedisMQ:
             if counter % 1000 == 0:
                 yield from self._get_pending_tasks()
 
-            keys = self._get_keys()
-            if not keys:
-                sleep(self._wait)
-                self._key_cache = None
-                continue
-
-            result = self._rdb.blpop(keys, timeout=1)
+            result = self._rdb.blpop([self._topic], timeout=1)
             if not result:
-                self._key_cache = None
+                sleep(self._wait)
                 continue
 
             topic, task = result
