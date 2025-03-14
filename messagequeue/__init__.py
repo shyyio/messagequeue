@@ -96,4 +96,4 @@ class RedisMQ:
 
         item = json.dumps(item, separators=(',', ':'), ensure_ascii=False, sort_keys=True)
 
-        self._rdb.lpush(self._topic, item)
+        self._rdb.rpush(self._topic, item)
